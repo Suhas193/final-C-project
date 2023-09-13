@@ -79,7 +79,7 @@ int main() {
         char buffer[1024];
         int bytes_received;
 
-        // Prompt the server to send an initial message
+        // Prompt in command
         printf("Server (You): ");
         gets(buffer);
 
@@ -107,11 +107,11 @@ int main() {
             send(client_socket, buffer, strlen(buffer), 0);
         }
 
-        // Close the client socket
+        
         closesocket(client_socket);
     }
 
-    // Cleanup and server exit code go here...
+    // Cleanup and server exit code.
     closesocket(server_socket);
     WSACleanup();
 
