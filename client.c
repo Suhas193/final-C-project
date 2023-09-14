@@ -36,10 +36,10 @@ int main() {
     char password[50];
 
     printf("Enter your username: ");
-    gets(username);
+    fgets(username, sizeof(username), stdin);
 
     printf("Enter your password: ");
-    gets(password);
+    fgets(password, sizeof(password), stdin);
 
     send(client_socket, username, strlen(username), 0);
     send(client_socket, password, strlen(password), 0);
