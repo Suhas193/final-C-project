@@ -1,11 +1,48 @@
 #include <stdio.h>
 #include <winsock2.h>
 #include <string.h>
+#include <ctype.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define USERNAME "admin"
-#define PASSWORD "pass"
+#define MAX_USERS 100
+#define MAX_USERNAME_LENGTH 50
+#define MAX_PASSWORD_LENGTH 50
+
+struct User {
+    char username[MAX_USERNAME_LENGTH];
+    char password[MAX_PASSWORD_LENGTH];
+};
+
+struct User users[MAX_USERS];
+int num_users = 0;
+
+void loadUserCredentials(const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Failed to open user credentials file.\n");
+        return;
+    }
+
+    char line[MAX_USERNAME_LENGTH + MAX_PASSWORD_LENGTH + 2]; // +2 for space and newline
+    while (num_users < MAX_USERS && fgets(line, sizeof(line), file) != NULL) {
+        printf("Read Line: %s", line); // Print the line for debugging
+        sscanf(line, "%s %s", users[num_users].username, users[num_users].password);
+        num_users++;
+    }
+
+    fclose(file);
+}
+
+int authenticateUser(const char* username, const char* password) {
+    for (int i = 0; i < num_users; i++) {
+        if (strcmp(username, users[i].username) == 0 && strcmp(password, users[i].password) == 0) {
+            return 1; // Authentication successful
+        }
+    }
+    return 0; // Authentication failed
+}
+
 
 int main() {
     WSADATA wsa;
@@ -32,6 +69,8 @@ int main() {
         return 1;
     }
 
+    loadUserCredentials("cred.txt"); // Load user credentials from file
+
     listen(server_socket, 5);
     printf("Server listening on port 8888...\n");
 
@@ -45,8 +84,8 @@ int main() {
         printf("Client connected.\n");
 
         // Authentication
-        char username[50];
-        char password[50];
+        char username[MAX_USERNAME_LENGTH];
+        char password[MAX_PASSWORD_LENGTH];
 
         if (recv(client_socket, username, sizeof(username), 0) == SOCKET_ERROR) {
             printf("Error in receiving username.\n");
@@ -63,11 +102,17 @@ int main() {
         username[strlen(username) - 1] = '\0'; // Remove newline character
         password[strlen(password) - 1] = '\0'; // Remove newline character
 
+
         // Debugging output to verify received credentials
         printf("Received Username: %s\n", username);
         printf("Received Password: %s\n", password);
 
-        if (strncmp(username, USERNAME, strlen(USERNAME)) != 0 || strncmp(password, PASSWORD, strlen(PASSWORD)) != 0) {
+        for (int i = 0; i < num_users; i++) {
+        printf("Stored Username: %s\n", users[i].username);
+        printf("Stored Password: %s\n", users[i].password);
+        }
+
+        if (!authenticateUser(username, password)) {
             printf("Authentication failed. Closing connection.\n");
             closesocket(client_socket);
             continue; // Continue listening for new connections
@@ -107,7 +152,6 @@ int main() {
             send(client_socket, buffer, strlen(buffer), 0);
         }
 
-        
         closesocket(client_socket);
     }
 
